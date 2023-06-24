@@ -12,6 +12,14 @@ class HomeUi extends StatefulWidget {
 class _HomeUiState extends State<HomeUi> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      backgroundColor: Colors.deepOrange[100],
+      appBar: AppBar (
+        backgroundColor: Colors.deepOrange,
+        title: Text(
+          'คำนวนค่างวดรถ'
+        ),
+      ),
+    );
   }
 }
