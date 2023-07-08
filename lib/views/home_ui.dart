@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class HomeUi extends StatefulWidget {
   const HomeUi({super.key});
@@ -11,6 +12,8 @@ class HomeUi extends StatefulWidget {
 }
 
 class _HomeUiState extends State<HomeUi> {
+  //เช็คค่าเพื่อใช้กำหนดรูปแบบตัวเลขมี comma
+  var nf = NumberFormat('###,##0.00',"en_US");
 
   TextEditingController _carpriceCtrl = TextEditingController(text: '');
   TextEditingController _interestCtrl = TextEditingController(text: '');
@@ -50,6 +53,113 @@ class _HomeUiState extends State<HomeUi> {
       ),
     ];
     return menuItems;
+  }
+
+  //เมธอดแสดง warning dialog
+
+  _showWarningDialog(context, msg) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Container(
+            color: Colors.deepOrange,
+            padding: EdgeInsets.only(
+              top: 10.0,
+              bottom: 10.0,
+            ),
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                'คำเตือน',
+                style: GoogleFonts.kanit(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          content: Text(
+            msg,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.kanit(
+              color: Colors.deepOrange,
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                  ),
+                  child: Text(
+                    'ตกลง',
+                    style: GoogleFonts.kanit(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //เมธอตแสดงผลลับ
+  _showResultDialog(context, msg) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Container(
+            color: Colors.deepOrange,
+            padding: EdgeInsets.only(
+              top: 10.0,
+              bottom: 10.0,
+            ),
+            child: Align(
+              alignment: Alignment.center,
+              child: Text(
+                'ยอดผ่อนรถต่อเดือน',
+                style: GoogleFonts.kanit(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          content: Text(
+            msg,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.kanit(
+              color: Colors.deepOrange,
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                  ),
+                  child: Text(
+                    'ตกลง',
+                    style: GoogleFonts.kanit(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -299,7 +409,45 @@ class _HomeUiState extends State<HomeUi> {
                 height: MediaQuery.of(context).size.width * 0.05,
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  //validate ตรวจสอบ หน้าจอว่าป้อนครบหรือยัง
+                  if (_carpriceCtrl.text.isEmpty == true){
+                    _showWarningDialog(context, "ป้อนราคารถด้วย");
+                  }else if(_interestCtrl.text.isEmpty == true){
+                    _showWarningDialog(context, "ป้อนดอกเบี้ย(%)ต่อปีด้วย...");
+                    
+                  }else{
+                    //พร้อมคำนวน โดยเริ่มจาก คำนวนเงินดาวน์
+                    //คำนวนเงินดานว์
+                    //แปลงราคาที่ป้อนจากข้อความให้เป็นตัวเลข
+                    double carPrice = double.parse(_carpriceCtrl.text);
+                    //แปลงเงินดาวน์ % ให้เป็นตัวเลข
+                    int downPay = int.parse(_downPay!);
+                    //คำนวนเงินดาวน์
+                    double moneyDownPay = carPrice * downPay / 100;
+                    //คำนวนยอดจัดs
+                    double carPriceForCal = carPrice - moneyDownPay;
+                    //คำนวนดอกเบี้ยต่อปี = ยอดจัด * ดอกเบี้ย(%) / 100;
+                    double interest = double.parse(_interestCtrl.text);
+                    double moneyInterest = carPriceForCal * interest / 100;
+                    //คำนวนดอกเบี้ยตามจำนวนปีที่ผ่อน = ดอกเบี้ย * จำนวนปีที่ผ่อน
+                    //แปลจำนวนปี ให้เป็นตัวเลข
+                    int yearPay = int.parse(_SelectYearPay!);
+                    double moneyInterestTotal = moneyInterest * yearPay;
+                    //คำนวนเงินที่จะนำไปคิดยอดผ่อน = ยอดจัด + ดอกเบี้ยตามจำนวนปีที่ผ่อน
+                    double carPriceTotal = carPriceForCal + moneyInterestTotal;
+                    //คำนวนเงินที่จะผ่อนต่อเดือน = เงินที่จะต้องนำไปคิดยอดผ่อน / (จำนวนปีที่ผ่อน * 12)
+                    double carMoneyPayPerMouth = carPriceTotal / (yearPay * 12);
+                    //แสดงผล ราคารถ เงินดาวน์ จำนวนเดือนที่ผ่อน และเงินที่ผ่อนต่อเดือน เป็นไดอะล็อก
+                    String msgShow = "รถราคา ${nf.format (carPrice) } บาท\n" ;
+                    msgShow += "ดาวน์${downPay}% เป็นเงิน ${nf.format (moneyDownPay)} บาท\n";
+                    msgShow += "จำนวนเดือนผ่อน${yearPay * 12} เดือน\n" ;
+                    msgShow += "ค่าผ่อนต่อเดือน ${nf.format (carMoneyPayPerMouth)} บาท" ;
+                    _showResultDialog(context, msgShow);
+
+                  
+                  }
+                },
                 child: Text(
                   'คำนวนค่างวดรถ',
                   style: GoogleFonts.kanit(),
